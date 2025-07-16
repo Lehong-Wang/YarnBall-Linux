@@ -82,9 +82,6 @@ namespace YarnBall {
 		vec3 gravity;			// Gravity
 		int numItr;				// Number of iterations used per time step
 
-		vec3 worldFloorNormal;	// World floor normal
-		float worldFloorPos;	// World floor position
-
 		float h;				// Time step (automatically set)
 		float lastH;			// Last time step
 		float time;				// Current time
