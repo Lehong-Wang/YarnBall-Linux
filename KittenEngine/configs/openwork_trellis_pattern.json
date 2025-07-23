@@ -22,6 +22,5 @@
 		"detectionPeriod": 2,
 		"detectionScaler": 1.1,
 		"stepLimit": true,
-		"velStepLimit": true,
 	},
 }

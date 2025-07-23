@@ -75,6 +75,7 @@ namespace YarnBall {
 
 		int* d_numCols;					// Number of collisions for each segment
 		float* d_maxStepSize;			// Max step size for the segment
+		float* d_paddingSize;			// Max step size for the segment
 		int* d_collisions;				// Collisions IDs stored as the other segment index.
 		Kit::LBVH::aabb* d_bounds;		// AABBs
 		ivec2* d_boundColList;			// Colliding segment AABB IDs. 
@@ -107,7 +108,6 @@ namespace YarnBall {
 		float maxSegLen;			// Largest segment length
 		float minSegLen;			// Largest segment length
 		int useStepSizeLimit;		// Whether to use the step size limit
-		int useVelocityRadius;		// Whether to add velocity onto the collision radius
 	} MetaData;
 
 	class Sim {

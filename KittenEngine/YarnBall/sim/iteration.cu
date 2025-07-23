@@ -18,12 +18,14 @@ namespace YarnBall {
 		vec3 dx = h * vel;
 		vec3 lastVel = lastVels[tid];
 		lastVels[tid] = vel;
-		float stepLimit = INFINITY;
+		float padding = data->scaledDetectionRadius;
+		auto y = dx + (h * h) * g;
+		padding += length(y);
 
 		if (verts[tid].invMass != 0) {
 			// Compute y (inertial + accel position)
 			// Store it in vel (The actual vel is no longer needed)
-			data->d_vels[tid] = dx + (h * h) * g;
+			data->d_vels[tid] = y;
 
 			// Compute initial guess
 			float g2 = length2(g);
@@ -33,6 +35,7 @@ namespace YarnBall {
 				dx += (h * h * s) * g;
 			}
 		}
+		data->d_paddingSize[tid] = padding;
 		data->d_dx[tid] = dx;
 
 		// Transfer segment data
@@ -41,7 +44,7 @@ namespace YarnBall {
 	}
 
 	void Sim::startIterate() {
-		initItr<< <(meta.numVerts + 255) / 256, 256, 0, stream >> > (d_meta);
+		initItr << <(meta.numVerts + 255) / 256, 256, 0, stream >> > (d_meta);
 	}
 
 	// Converts dx back to velocity and advects

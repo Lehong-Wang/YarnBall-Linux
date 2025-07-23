@@ -27,10 +27,8 @@ namespace YarnBall {
 		meta.frictionCoeff = 0.1f;
 		meta.kFriction = 5.f;
 
-
 		meta.detectionPeriod = 1;
 		meta.useStepSizeLimit = true;
-		meta.useVelocityRadius = true;
 		meta.bvhRebuildPeriod = 1 / 10.f;	// Really only need to rebuild every 100ms
 		meta.numItr = 8;
 
@@ -73,6 +71,7 @@ namespace YarnBall {
 			cudaFree(meta.d_lastCID);
 			cudaFree(meta.d_numCols);
 			cudaFree(meta.d_maxStepSize);
+			cudaFree(meta.d_paddingSize);
 			cudaFree(meta.d_collisions);
 			cudaFree(meta.d_bounds);
 			cudaFree(meta.d_boundColList);
@@ -181,6 +180,7 @@ namespace YarnBall {
 		cudaMalloc(&meta.d_lastFlags, sizeof(int) * numVerts);
 
 		cudaMalloc(&meta.d_maxStepSize, sizeof(float) * numVerts);
+		cudaMalloc(&meta.d_paddingSize, sizeof(float) * numVerts);
 		cudaMalloc(&meta.d_numCols, sizeof(int) * numVerts);
 		cudaMemset(meta.d_numCols, 0, sizeof(int) * meta.numVerts);
 		cudaMalloc(&meta.d_collisions, sizeof(int) * numVerts * MAX_COLLISIONS_PER_SEGMENT);

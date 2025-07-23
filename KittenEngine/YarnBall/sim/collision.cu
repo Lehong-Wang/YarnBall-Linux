@@ -7,7 +7,6 @@
 #include "../YarnBall.h"
 
 namespace YarnBall {
-	template <bool USE_VEL_RADIUS>
 	__global__ void buildAABBs(MetaData* data, int* errorReturn) {
 		const int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		if (tid >= data->numVerts) return;
@@ -22,21 +21,14 @@ namespace YarnBall {
 
 			aabb.absorb(p0);
 			aabb.absorb(p1);
-			
-			float padding = data->scaledDetectionRadius;
-			if (USE_VEL_RADIUS) {
-				auto dxs = data->d_dx;
-				// Step limit is always centered on the current frame position
-				// So we expand our query radius to cover any expected movement
-				padding += sqrt(max(length2(dxs[tid]), length2(dxs[tid + 1])));
-			}
-			aabb.pad(padding);
+
+			auto pads = data->d_paddingSize;
+			aabb.pad(max(pads[tid], pads[tid + 1]));
 		}
 
 		data->d_bounds[tid] = aabb;
 	}
 
-	template <bool USE_VEL_RADIUS>
 	__global__ void buildCollisionList(MetaData* data, int maxCols, int* errorReturn) {
 		const int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		const int numVerts = data->numVerts;
@@ -67,12 +59,8 @@ namespace YarnBall {
 		vec3 normal = uv.x * a1 - mix(b0, b1, uv.y);
 		float d2 = Kit::length2(normal);
 
-		float r = 2 * data->scaledDetectionRadius;
-		if (USE_VEL_RADIUS) {
-			auto dxs = data->d_dx;
-			r += sqrt(glm::max(length2(dxs[ids.x]), length2(dxs[ids.x + 1])));
-			r += sqrt(glm::max(length2(dxs[ids.y]), length2(dxs[ids.y + 1])));
-		}
+		auto pads = data->d_paddingSize;
+		float r = max(pads[ids.x], pads[ids.x + 1]) + max(pads[ids.y], pads[ids.y + 1]);
 
 		if (d2 < r * r) {
 			auto nCols = data->d_numCols;
@@ -93,10 +81,7 @@ namespace YarnBall {
 
 	void Sim::detectCollisions() {
 		// Rebuild bvh
-		if (meta.useVelocityRadius)
-			buildAABBs<true> << <(meta.numVerts + 255) / 256, 256 >> > (d_meta, d_error);
-		else
-			buildAABBs<false> << <(meta.numVerts + 255) / 256, 256 >> > (d_meta, d_error);
+		buildAABBs << <(meta.numVerts + 255) / 256, 256 >> > (d_meta, d_error);
 
 		if (lastBVHRebuild >= meta.bvhRebuildPeriod) {
 			bvh.compute(meta.d_bounds, meta.numVerts);
@@ -112,13 +97,10 @@ namespace YarnBall {
 
 		// Build collision list
 		cudaMemsetAsync(meta.d_numCols, 0, sizeof(int) * meta.numVerts, stream);
-		if (meta.useVelocityRadius)
-			buildCollisionList<true> << <(numCols + 127) / 128, 128, 0, stream >> > (d_meta, numCols, d_error);
-		else
-			buildCollisionList<false> << <(numCols + 127) / 128, 128, 0, stream >> > (d_meta, numCols, d_error);
+		buildCollisionList << <(numCols + 127) / 128, 128, 0, stream >> > (d_meta, numCols, d_error);
 	}
 
-	template<bool LIMIT, bool USE_VEL_RADIUS>
+	template<bool LIMIT>
 	__global__ void recomputeStepLimitKernel(MetaData* data) {
 		const int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		const int numVerts = data->numVerts;
@@ -134,9 +116,7 @@ namespace YarnBall {
 			vec3 a1 = verts[tid + 1] - a0;
 
 			// This is the maximum move possible where the AABB query is still guaranteed to find the collision
-			minDist = data->detectionRadius * (data->detectionScaler - 1);
-			if (USE_VEL_RADIUS)
-				minDist += length(data->d_dx[tid]);
+			minDist = data->d_paddingSize[tid] - data->detectionRadius;
 
 			// Collision energy of this segment
 			const int numCols = data->d_numCols[tid];
@@ -159,15 +139,9 @@ namespace YarnBall {
 	}
 
 	void Sim::recomputeStepLimit() {
-		if (meta.useStepSizeLimit) {
-			if (meta.useVelocityRadius)
-				recomputeStepLimitKernel<true, true> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
-			else recomputeStepLimitKernel<true, false> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
-		}
-		else {
-			if (meta.useVelocityRadius)
-				recomputeStepLimitKernel<false, true> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
-			else recomputeStepLimitKernel<false, false> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
-		}
+		if (meta.useStepSizeLimit)
+			recomputeStepLimitKernel<true> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
+		else
+			recomputeStepLimitKernel<false> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
 	}
 }

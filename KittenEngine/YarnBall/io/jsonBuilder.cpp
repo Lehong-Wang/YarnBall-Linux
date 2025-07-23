@@ -88,8 +88,6 @@ namespace YarnBall {
 				sim->meta.detectionScaler = simRoot["detectionScaler"].asFloat();
 			if (!simRoot["stepLimit"].isNull())
 				sim->meta.useStepSizeLimit = simRoot["stepLimit"].asBool() ? 1 : 0;
-			if (!simRoot["velStepLimit"].isNull())
-				sim->meta.useVelocityRadius = simRoot["velStepLimit"].asBool() ? 1 : 0;
 			if (!simRoot["bvhRebuildPeriod"].isNull())
 				sim->meta.bvhRebuildPeriod = simRoot["bvhRebuildPeriod"].asFloat();
 		}
