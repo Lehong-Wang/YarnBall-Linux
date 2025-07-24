@@ -41,6 +41,5 @@
 		"detectionPeriod": 4,	// How often to update collision queries. 1 is every frame. 4 is every 4 frames. -1 to turn off collisions. 
 		"detectionScaler": 1.1,	// How much to scale query radius when generating neighbors list
 		"stepLimit": true,		// Enforce step limits to guarentee non-penetration
-		"velStepLimit": true,	// Dynamically change per vertex max query radius with velocity
 	},
 }
