@@ -61,6 +61,7 @@ namespace YarnBall {
 		if (vertBuffer) delete vertBuffer;
 		if (qBuffer) delete qBuffer;
 		if (d_meta) {
+			cudaFree(meta.d_verts);
 			cudaFree(meta.d_dx);
 			cudaFree(meta.d_vels);
 			cudaFree(meta.d_qRests);
