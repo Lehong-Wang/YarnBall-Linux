@@ -56,7 +56,6 @@ namespace YarnBall {
 		// We need to store absolute position and position updates seperatly for floating point precision
 		// If we added these together, the update could be small enough to be rounded out, causing stability issues
 		vec3 p1, p1dx;
-		float stepLimit = INFINITY;
 		vec3 f2(0);
 		hess3 H2(0);
 
@@ -66,8 +65,6 @@ namespace YarnBall {
 
 			// Cosserat stretching energy
 			if (!sid) {
-				stepLimit = data->d_maxStepSize[tid];
-
 				float invl = 1 / v0.lRest;
 				vec3 c = ((p1 - v0.pos) + (p1dx - dx)) * invl - data->d_qs[tid] * vec3(1, 0, 0);
 
@@ -177,6 +174,7 @@ namespace YarnBall {
 			vec4* forces = (vec4*)sharedData;
 			hess3* hessians = (hess3*)(sharedData + 4 * VERTEX_PER_BLOCK);
 
+			float stepLimit = data->d_maxStepSize[tid];
 			forces[threadIdx.x] = vec4(f2, stepLimit);
 			hessians[threadIdx.x] = H2;
 

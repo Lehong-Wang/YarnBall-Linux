@@ -118,7 +118,6 @@ namespace YarnBall {
 			// This is the maximum move possible where the AABB query is still guaranteed to find the collision
 			minDist = data->d_paddingSize[tid] - data->detectionRadius;
 
-			// Collision energy of this segment
 			const int numCols = data->d_numCols[tid];
 			const auto collisions = data->d_collisions + tid;
 			for (int i = 0; i < numCols; i++) {
@@ -129,7 +128,6 @@ namespace YarnBall {
 				// Recompute contact data
 				vec2 uv = Kit::segmentClosestPoints(vec3(0), a1, b0, b1);
 
-				// Remove duplicate collisions if there is a previous segment and the collision happens on the lower corner
 				vec3 normal = uv.x * a1 - mix(b0, b1, uv.y);
 				float l = length(normal);
 				minDist = min(minDist, ((1 - SAFETY_MARGIN) * 0.5f) * l);
