@@ -17,6 +17,7 @@ namespace YarnBall {
 #define THREADS_PER_VERTEX (2)
 #define VERTEX_PER_BLOCK (BLOCK_SIZE / THREADS_PER_VERTEX)
 
+	template<bool LIMIT>
 	__global__ void cosseratItr(MetaData* data) {
 		const int sid = threadIdx.x / VERTEX_PER_BLOCK;			// Sector id
 		const int ltid = threadIdx.x - sid * VERTEX_PER_BLOCK;	// Local tid
@@ -174,7 +175,8 @@ namespace YarnBall {
 			vec4* forces = (vec4*)sharedData;
 			hess3* hessians = (hess3*)(sharedData + 4 * VERTEX_PER_BLOCK);
 
-			float stepLimit = data->d_maxStepSize[tid];
+			float stepLimit = INFINITY;
+			if (LIMIT) stepLimit = data->d_maxStepSize[tid];
 			forces[threadIdx.x] = vec4(f2, stepLimit);
 			hessians[threadIdx.x] = H2;
 
@@ -185,7 +187,7 @@ namespace YarnBall {
 
 			if (v0.flags & (uint32_t)VertexFlags::hasPrev) {
 				vec4 v = forces[threadIdx.x - 1];
-				stepLimit = min(stepLimit, v.w);
+				if (LIMIT) stepLimit = min(stepLimit, v.w);
 				f += vec3(v);
 				H += hessians[threadIdx.x - 1];
 			}
@@ -195,8 +197,10 @@ namespace YarnBall {
 				vec3 delta = data->accelerationRatio * (inverse((mat3)H) * f);
 				dx += delta;
 
-				float l = length(dx);
-				if (l > stepLimit && l > 0) dx *= stepLimit / l;
+				if (LIMIT) {
+					float l = length(dx);
+					if (l > stepLimit && l > 0) dx *= stepLimit / l;
+				}
 
 				// Apply update
 				dxs[tid] = dx;
@@ -251,7 +255,10 @@ namespace YarnBall {
 	}
 
 	void Sim::iterateCosserat() {
-		cosseratItr << <(meta.numVerts + VERTEX_PER_BLOCK - 2) / (VERTEX_PER_BLOCK - 1), BLOCK_SIZE, 0, stream >> > (d_meta);
+		if (meta.useStepSizeLimit)
+			cosseratItr<true> << <(meta.numVerts + VERTEX_PER_BLOCK - 2) / (VERTEX_PER_BLOCK - 1), BLOCK_SIZE, 0, stream >> > (d_meta);
+		else
+			cosseratItr<false> << <(meta.numVerts + VERTEX_PER_BLOCK - 2) / (VERTEX_PER_BLOCK - 1), BLOCK_SIZE, 0, stream >> > (d_meta);
 		quaternionLambdaItr << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
 	}
 }

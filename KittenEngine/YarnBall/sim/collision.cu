@@ -100,14 +100,13 @@ namespace YarnBall {
 		buildCollisionList << <(numCols + 127) / 128, 128, 0, stream >> > (d_meta, numCols, d_error);
 	}
 
-	template<bool LIMIT>
 	__global__ void recomputeStepLimitKernel(MetaData* data) {
 		const int tid = threadIdx.x + blockIdx.x * blockDim.x;
 		const int numVerts = data->numVerts;
 		if (tid >= numVerts) return;
 
 		float minDist = INFINITY;
-		if (LIMIT && (bool)(data->d_lastFlags[tid] & (uint32_t)VertexFlags::hasNext)) {
+		if (data->d_lastFlags[tid] & (uint32_t)VertexFlags::hasNext) {
 			constexpr float SAFETY_MARGIN = 0.1f;
 
 			// Linear change
@@ -137,9 +136,6 @@ namespace YarnBall {
 	}
 
 	void Sim::recomputeStepLimit() {
-		if (meta.useStepSizeLimit)
-			recomputeStepLimitKernel<true> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
-		else
-			recomputeStepLimitKernel<false> << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
+		recomputeStepLimitKernel << <(meta.numVerts + 127) / 128, 128, 0, stream >> > (d_meta);
 	}
 }

@@ -13,7 +13,8 @@ namespace YarnBall {
 		{
 			cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
 
-			recomputeStepLimit();
+			if (meta.useStepSizeLimit)
+				recomputeStepLimit();
 
 			for (size_t i = 0; i < meta.numItr; i++)
 				iterateCosserat();
