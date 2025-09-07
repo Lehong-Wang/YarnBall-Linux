@@ -13,7 +13,7 @@ namespace YarnBall {
 		const int64_t seed = 0x12345678;
 		fastXS64 prng(seed);
 
-		const float r = meta.radius + 0.5f * meta.barrierThickness;
+		const float r = 1.2f * (meta.radius + 0.5f * meta.barrierThickness);
 
 		const int numFibers = 8;
 		const float fiberFrizz = 0.2f * r;
