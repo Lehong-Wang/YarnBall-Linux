@@ -1,5 +1,6 @@
 # YarnBall Sim: A high performance yarn simulator
-
+ [![](https://www.replicabilitystamp.org/logo/Reproducibility-small.png)](http://www.replicabilitystamp.org#https-github-com-jerry060599-yarnball)
+ 
 A massively parallel GPU implementation of the paper ["Stable Cosserat Rods" SIGGRAPH 2025](https://jerryhsu.io/projects/StableCosseratRods/), [Jerry Hsu](https://jerryhsu.io), Tongtong Wang, Kui Wu, and Cem Yuksel. 
 
 This repository contains the source code, model, and paramters for the yarn twisting and yarn letter examples.
@@ -21,6 +22,12 @@ Configured for Windows and Visual Studios.
 To install these packages:
 
 1. Setup vcpkg https://vcpkg.io/en/getting-started.html
+```
+git clone https://github.com/microsoft/vcpkg.git
+.\bootstrap-vcpkg.bat
+.\vcpkg.exe integrate install
+```
+Optionally add vcpkg.exe to %PATH%
 
 2. Run:
 ```
@@ -37,6 +44,9 @@ vcpkg.exe install cli11:x64-windows
 **DO NOT INSTALL GLM DIRECTLY FROM THE CURRENT WORKING BRANCH.**
 Only install versions taged as stable releases or through vcpkg. 
 When in doubt, use glm version ```1.0.1#3```. 
+
+This was tested to run on the NVIDIA RTX 3090, 4090, and 5090. 
+It was also tested with the RTX 2080 by changing the CUDA code generation setting to use "compute_75,sm_75". 
 
 ## Usage
 This repo contains both a sample CLI and a C++ interface. 
