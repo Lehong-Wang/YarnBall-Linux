@@ -8,11 +8,11 @@ namespace YarnBall {
 	}
 
 	void Sim::render() {
-		static auto segBase = Kit::get<Kit::Shader>("resources\\shaders\\yarnSegBase.glsl");
-		static auto segForward = Kit::get<Kit::Shader>("resources\\shaders\\yarnSegForward.glsl");
+		static auto segBase = Kit::get<Kit::Shader>("resources/shaders/yarnSegBase.glsl");
+		static auto segForward = Kit::get<Kit::Shader>("resources/shaders/yarnSegForward.glsl");
 
-		static auto shadedBase = Kit::get<Kit::Shader>("resources\\shaders\\yarnSegBase.glsl");
-		static auto shadedForward = Kit::get<Kit::Shader>("resources\\shaders\\yarnForward.glsl");
+		static auto shadedBase = Kit::get<Kit::Shader>("resources/shaders/yarnSegBase.glsl");
+		static auto shadedForward = Kit::get<Kit::Shader>("resources/shaders/yarnForward.glsl");
 
 		vertBuffer->bind(5);
 		qBuffer->bind(6);
@@ -31,7 +31,7 @@ namespace YarnBall {
 	}
 
 	void Sim::renderShadows() {
-		static auto segBase = Kit::get<Kit::Shader>("resources\\shaders\\yarnSegBase.glsl");
+		static auto segBase = Kit::get<Kit::Shader>("resources/shaders/yarnSegBase.glsl");
 
 		vertBuffer->bind(5);
 		segBase->setInt("numVerts", meta.numVerts);

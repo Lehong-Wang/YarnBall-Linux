@@ -6,12 +6,16 @@ namespace Kitten {
 	// There is a templated version of this but the compiler doesnt unroll it properly
 	// So here is a simple version where whats needed is hand unrolled.
 	struct hess3 {
+		// GCC rejects anonymous aggregates whose members have non-trivial
+		// constructors (glm::vec has user-defined ctors). Named inner struct
+		// works under both compilers.
+		struct s_t {
+			vec3 diag;
+			vec3 upperTriangle;
+		};
 		union {
 			float dat[6];
-			struct {
-				vec3 diag;
-				vec3 upperTriangle;
-			};
+			s_t s;
 		};
 
 		KITTEN_FUNC_DECL hess3() {}
@@ -110,12 +114,13 @@ namespace Kitten {
 	// There is a templated version of this but the compiler doesnt unroll it properly
 	// So here is a simple version where whats needed is hand unrolled.
 	struct hess4 {
+		struct s_t {
+			vec4 diag;
+			float upperTriangle[6];
+		};
 		union {
 			float dat[10];
-			struct {
-				vec4 diag;
-				float upperTriangle[6];
-			};
+			s_t s;
 		};
 
 		KITTEN_FUNC_DECL hess4() {}

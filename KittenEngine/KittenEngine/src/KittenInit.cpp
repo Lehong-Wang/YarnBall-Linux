@@ -68,6 +68,12 @@ namespace Kitten {
 		glfwWindowHint(GLFW_SAMPLES, 16);
 		window = glfwCreateWindow(res.x, res.y, title, nullptr, nullptr);
 		if (!window) {
+			// WSLg's Mesa-on-D3D12 stack tops out at GL 4.5 and may reject 16xMSAA.
+			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+			glfwWindowHint(GLFW_SAMPLES, 0);
+			window = glfwCreateWindow(res.x, res.y, title, nullptr, nullptr);
+		}
+		if (!window) {
 			std::cerr << "Cannot create window";
 			std::exit(1);
 		}

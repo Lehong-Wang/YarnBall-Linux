@@ -300,7 +300,7 @@ namespace Kitten {
 			glTempVar<GL_CULL_FACE> cull(false);
 			glTempVar<GL_DEPTH_WRITEMASK> zwrite(false);
 
-			static auto shader = get<Shader>("KittenEngine\\shaders\\gizmo.glsl");
+			static auto shader = get<Shader>("KittenEngine/shaders/gizmo.glsl");
 			shader->use();
 			gizmoBuffer->bind(3);
 			glBindVertexArray(defMesh->VAO);

@@ -66,14 +66,14 @@ namespace Kitten {
 		// We're going to provide standard vert/frag shaders if either is missing
 		if (!(type & (int)ShaderType::FRAG)) {
 			unsigned int handle;
-			compileShader("KittenEngine\\shaders\\blingForward.frag", GL_FRAGMENT_SHADER, &handle);
+			compileShader("KittenEngine/shaders/blingForward.frag", GL_FRAGMENT_SHADER, &handle);
 			unlinkedHandles.push_back(handle);
 			type |= (int)ShaderType::FRAG;
 		}
 
 		if (!(type & (int)ShaderType::VERT)) {
 			unsigned int handle;
-			compileShader("KittenEngine\\shaders\\blingForward.vert", GL_VERTEX_SHADER, &handle);
+			compileShader("KittenEngine/shaders/blingForward.vert", GL_VERTEX_SHADER, &handle);
 			unlinkedHandles.push_back(handle);
 			type |= (int)ShaderType::VERT;
 		}

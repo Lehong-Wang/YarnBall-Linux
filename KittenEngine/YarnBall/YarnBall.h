@@ -177,7 +177,7 @@ namespace YarnBall {
 
 		// Simulation
 		void step(float dt);		// Perform one timestep
-		float advance(float dt);	// Advance the simulation by dt using one or more timesteps. 
+		float advance(float dt);	// Advance the simulation by dt using one or more timesteps.
 
 		void printCollisionStats();
 		Kitten::LBVH::aabb bounds();

@@ -45,8 +45,8 @@ namespace Kitten {
 		else if (ext == ".glsl" || ext == ".include" || ext == ".mtl") {
 		}
 		else if (ext == ".csv" || ext == ".txt" || ext == ".cfg" || ext == ".json") {
-			cout << "asset: loading text " << path.string().c_str() << endl;
-			resources[path.string()] = new string(loadText(path.string()));
+			cout << "asset: loading text " << path.generic_string().c_str() << endl;
+			resources[path.generic_string()] = new string(loadText(path.string()));
 		}
 		else
 			cout << "err: unknown asset type " << path << endl;
@@ -66,15 +66,15 @@ namespace Kitten {
 	}
 
 	void loadTexture(path path) {
-		if (resources.count(path.string()))
+		if (resources.count(path.generic_string()))
 			return;
 		string filename = path.filename().string();
 		string parsedName;
 		Tags tags;
 		parseAssetTag(filename, parsedName, tags);
-		printf("asset: loading image %s (%s)\n", path.string().c_str(), parsedName.c_str());
+		printf("asset: loading image %s (%s)\n", path.generic_string().c_str(), parsedName.c_str());
 
-		parsedName = path.parent_path().string().append("\\").append(parsedName);
+		parsedName = (path.parent_path() / parsedName).generic_string();
 
 		int width, height, nrChannels;
 		stbi_set_flip_vertically_on_load(1);
@@ -111,7 +111,7 @@ namespace Kitten {
 			glGenerateMipmap(GL_TEXTURE_2D);
 
 			resources[parsedName] = img;
-			resources[path.string()] = img;
+			resources[path.generic_string()] = img;
 		}
 		else
 			cout << "err: failed to load " << path << endl;
@@ -124,7 +124,7 @@ namespace Kitten {
 		unsigned int handle;
 		int type = 0;
 		Shader* shader;
-		string sName = path.string().substr(0, path.string().length() - 5).append(".glsl");
+		string sName = path.generic_string().substr(0, path.generic_string().length() - 5).append(".glsl");
 
 		printf("asset: loading shader %s (%s)\n", sName.c_str(), ext.c_str());
 
@@ -137,27 +137,27 @@ namespace Kitten {
 
 		if (ext == ".vert") {
 			type = (int)ShaderType::VERT;
-			compileShader(path.string(), GL_VERTEX_SHADER, &handle);
+			compileShader(path.generic_string(), GL_VERTEX_SHADER, &handle);
 		}
 		else if (ext == ".frag") {
 			type = (int)ShaderType::FRAG;
-			compileShader(path.string(), GL_FRAGMENT_SHADER, &handle);
+			compileShader(path.generic_string(), GL_FRAGMENT_SHADER, &handle);
 		}
 		else if (ext == ".geom") {
 			type = (int)ShaderType::GEOM;
-			compileShader(path.string(), GL_GEOMETRY_SHADER, &handle);
+			compileShader(path.generic_string(), GL_GEOMETRY_SHADER, &handle);
 		}
 		else if (ext == ".tesc") {
 			type = (int)ShaderType::TESS;
-			compileShader(path.string(), GL_TESS_CONTROL_SHADER, &handle);
+			compileShader(path.generic_string(), GL_TESS_CONTROL_SHADER, &handle);
 		}
 		else if (ext == ".tese") {
 			type = (int)ShaderType::TESS;
-			compileShader(path.string(), GL_TESS_EVALUATION_SHADER, &handle);
+			compileShader(path.generic_string(), GL_TESS_EVALUATION_SHADER, &handle);
 		}
 		else if (ext == ".comp") {
 			type = (int)ShaderType::COMP;
-			compileShader(path.string(), GL_COMPUTE_SHADER, &handle);
+			compileShader(path.generic_string(), GL_COMPUTE_SHADER, &handle);
 		}
 		if (type == 0) {
 			printf("err: unknown shader type %s.", name.c_str());

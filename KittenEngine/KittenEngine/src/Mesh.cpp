@@ -139,8 +139,7 @@ namespace Kitten {
 	}
 
 	void Mesh::writeOBJ(string p) {
-		FILE* file;
-		fopen_s(&file, p.c_str(), "w");
+		FILE* file = fopen(p.c_str(), "w");
 		if (file) {
 			fprintf(file, "# WaveFront *.obj file\n\n");
 
@@ -165,8 +164,7 @@ namespace Kitten {
 	}
 
 	void Mesh::writeOBJ(string p, mat4 transform) {
-		FILE* file;
-		fopen_s(&file, p.c_str(), "w");
+		FILE* file = fopen(p.c_str(), "w");
 		if (file) {
 			fprintf(file, "# WaveFront *.obj file\n\n");
 
@@ -192,8 +190,7 @@ namespace Kitten {
 	}
 
 	void Mesh::writePOLY(string p) {
-		FILE* file;
-		fopen_s(&file, p.c_str(), "w");
+		FILE* file = fopen(p.c_str(), "w");
 		if (file) {
 			fprintf(file, "%zd 3 0 0\n", vertices.size());
 
@@ -262,7 +259,7 @@ namespace Kitten {
 	}
 
 	Mesh* loadMeshFrom(std::filesystem::path path) {
-		if (resources.count(path.string())) return (Mesh*)resources[path.string()];
+		if (resources.count(path.generic_string())) return (Mesh*)resources[path.generic_string()];
 
 		Assimp::Importer import;
 		const aiScene * scene = import.ReadFile(path.string(), meshImportFlags);
@@ -281,7 +278,7 @@ namespace Kitten {
 		for (size_t i = 0; i < scene->mNumMaterials; i++) {
 			aiMaterial* aim = scene->mMaterials[i];
 			Material* mat = new Material;
-			string nName = path.string() + "\\materials\\" + aim->GetName().C_Str();
+			string nName = path.generic_string() + "/materials/" + aim->GetName().C_Str();
 			printf("asset: loading sub-material %s\n", nName.c_str());
 			resources[nName] = mat;
 			mats[i] = mat;
@@ -303,12 +300,18 @@ namespace Kitten {
 
 			aiString str;
 			if (AI_SUCCESS == aim->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), str)) {
-				string p = path.parent_path().string() + "\\" + str.C_Str();
+				// Assimp may return Windows-style separators in material paths; normalize.
+				string texRel = str.C_Str();
+				std::replace(texRel.begin(), texRel.end(), '\\', '/');
+				string p = (path.parent_path() / texRel).generic_string();
 				loadTexture(p);
 				mat->texs[0] = (Texture*)resources[p];
 			}
 			if (AI_SUCCESS == aim->Get(AI_MATKEY_TEXTURE(aiTextureType_SPECULAR, 0), str)) {
-				string p = path.parent_path().string() + "\\" + str.C_Str();
+				// Assimp may return Windows-style separators in material paths; normalize.
+				string texRel = str.C_Str();
+				std::replace(texRel.begin(), texRel.end(), '\\', '/');
+				string p = (path.parent_path() / texRel).generic_string();
 				loadTexture(p);
 				mat->texs[1] = (Texture*)resources[p];
 			}
@@ -325,10 +328,10 @@ namespace Kitten {
 			if (node->mNumMeshes) {
 				Mesh* mesh = new Mesh;
 				loadedMesh = mesh;
-				string nName = path.string() + "\\" + node->mName.C_Str();
+				string nName = path.generic_string() + "/" + node->mName.C_Str();
 				resources[nName] = mesh;
 				if (firstMesh) {
-					resources[path.string()] = mesh;
+					resources[path.generic_string()] = mesh;
 					firstMesh = false;
 					printf("asset: loading sub-mesh %s (\\%s)\n", path.string().c_str(), node->mName.C_Str());
 				}
@@ -403,8 +406,9 @@ namespace Kitten {
 	}
 
 	TetMesh* loadTetgenFrom(path path) {
-		string name = path.string().substr(0, path.string().size() - path.extension().string().size()) + ".tetgen";
-		printf("asset: loading tetgen-mesh %s (.tetgen)\n", path.string().c_str());
+		string pathKey = path.generic_string();
+		string name = pathKey.substr(0, pathKey.size() - path.extension().string().size()) + ".tetgen";
+		printf("asset: loading tetgen-mesh %s (.tetgen)\n", pathKey.c_str());
 
 		auto itr = resources.find(name);
 		TetMesh* mesh;
@@ -416,7 +420,7 @@ namespace Kitten {
 			mesh->defTransform = mat4(1);
 			resources[name] = mesh;
 		}
-		resources[path.string()] = mesh;
+		resources[pathKey] = mesh;
 
 		string ext = path.extension().string();
 		if (ext == ".node") {
@@ -682,8 +686,7 @@ namespace Kitten {
 	}
 
 	void TetMesh::writeMSH(string p) {
-		FILE* file;
-		fopen_s(&file, p.c_str(), "w");
+		FILE* file = fopen(p.c_str(), "w");
 		if (file) {
 			fprintf(file, "$MeshFormat\n4.1 0 8\n$EndMeshFormat\n");
 			fprintf(file, "$Nodes\n1 %zd 1 %zd\n3 0 0 %zd\n", vertices.size(), vertices.size(), vertices.size());
@@ -782,8 +785,7 @@ namespace Kitten {
 	}
 
 	void TetMesh::writeTetsOBJ(string p) {
-		FILE* file;
-		fopen_s(&file, p.c_str(), "w");
+		FILE* file = fopen(p.c_str(), "w");
 		if (file) {
 			fprintf(file, "# WaveFront *.obj file\n\n");
 

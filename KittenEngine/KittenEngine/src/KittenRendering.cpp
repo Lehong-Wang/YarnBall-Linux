@@ -103,17 +103,17 @@ namespace Kitten {
 		if (initialized) return;
 		initialized = true;
 
-		includePaths.push_back("KittenEngine\\shaders");
+		includePaths.push_back("KittenEngine/shaders");
 
-		loadDirectory("KittenEngine\\shaders");
-		defBaseShader = get<Kitten::Shader>("KittenEngine\\shaders\\blingBase.glsl");
-		defForwardShader = get<Kitten::Shader>("KittenEngine\\shaders\\blingForward.glsl");
-		defUnlitShader = get<Kitten::Shader>("KittenEngine\\shaders\\unlit.glsl");
-		defEnvShader = get<Kitten::Shader>("KittenEngine\\shaders\\env.glsl");
-		defBlitShader = get<Kitten::Shader>("KittenEngine\\shaders\\blit.glsl");
+		loadDirectory("KittenEngine/shaders");
+		defBaseShader = get<Kitten::Shader>("KittenEngine/shaders/blingBase.glsl");
+		defForwardShader = get<Kitten::Shader>("KittenEngine/shaders/blingForward.glsl");
+		defUnlitShader = get<Kitten::Shader>("KittenEngine/shaders/unlit.glsl");
+		defEnvShader = get<Kitten::Shader>("KittenEngine/shaders/env.glsl");
+		defBlitShader = get<Kitten::Shader>("KittenEngine/shaders/blit.glsl");
 
-		loadDirectory("KittenEngine\\fonts");
-		defFont = get<Kitten::Font>("KittenEngine\\fonts\\Quicksand_Regular.ttf");
+		loadDirectory("KittenEngine/fonts");
+		defFont = get<Kitten::Font>("KittenEngine/fonts/Quicksand_Regular.ttf");
 
 		uboCommon = new UniformBuffer<UBOCommon>;
 		uboModel = new UniformBuffer<UBOModel>;

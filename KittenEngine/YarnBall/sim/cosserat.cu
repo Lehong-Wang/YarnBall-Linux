@@ -50,7 +50,7 @@ namespace YarnBall {
 				vec3 p0 = lastPos[v0.connectionIndex];
 				vec3 p0dx = dxs[v0.connectionIndex];
 				f -= stiffness * ((v0.pos - p0) + (dx - p0dx) + damping * dx);
-				H.diag += stiffness * (1 + damping);
+				H.s.diag += stiffness * (1 + damping);
 			}
 		}
 
@@ -74,8 +74,8 @@ namespace YarnBall {
 				f += k * c - (damping * d) * dx;
 				f2 += -k * c - (damping * d) * p1dx;
 				d *= 1 + damping;
-				H.diag += d;
-				H2.diag += d;
+				H.s.diag += d;
+				H2.s.diag += d;
 			}
 
 			const float fricK = data->kFriction;
@@ -135,7 +135,7 @@ namespace YarnBall {
 				if (ul > 0) {
 					float f1 = glm::min(fricK, fricMu * ff / ul);
 
-					op.diag -= 1;
+					op.s.diag -= 1;
 
 					f -= f1 * uv.x * u;
 					H -= op * (Kit::pow2(uv.x) * f1);

@@ -38,7 +38,7 @@ namespace Kitten {
 
 		T samples[maxLevel];
 		T sampleL = f(a);
-		samples[minLevel] = f(mix(a, b, minIntSize));
+		samples[minLevel] = f(glm::mix(a, b, minIntSize));
 
 		double ends[maxLevel];
 		ends[minLevel - 1] = ends[minLevel] = minIntSize;
@@ -58,7 +58,7 @@ namespace Kitten {
 			const double at = bt - 1 / double(1 << level);
 
 			// Sample midpoint
-			const T sampleM = f(mix(a, b, 0.5 * (at + bt)));
+			const T sampleM = f(glm::mix(a, b, 0.5 * (at + bt)));
 			const T vh = 0.5 * (sampleL + samples[level]);
 			const T vhh = 0.25 * (sampleL + 2. * sampleM + samples[level]);
 			const T err = (vhh - vh) * (1. / 3.);
@@ -88,7 +88,7 @@ namespace Kitten {
 				if (level <= minLevel) {
 					if (++k == (1 << minLevel)) break;
 					ends[minLevel - 1] = ends[minLevel] = (k + 1) * minIntSize;
-					samples[minLevel] = f(mix(a, b, ends[minLevel]));
+					samples[minLevel] = f(glm::mix(a, b, ends[minLevel]));
 					level = minLevel;
 				}
 				else samples[level] = samples[level - 1];

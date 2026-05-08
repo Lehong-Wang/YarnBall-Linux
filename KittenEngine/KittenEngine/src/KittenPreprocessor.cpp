@@ -62,7 +62,11 @@ namespace Kitten {
 		includedSet.insert(path);
 
 		string src = loadText(path);
-		regex pattern("^ *#include +[<|\"][^\\n\">]+[>|\"] *\n?");
+		// Use multiline so `^` matches after every \n, not just at offset 0.
+		// Without this, only an `#include` on the very first line would be
+		// inlined; everything else gets passed through to the GL driver.
+		regex pattern("^ *#include +[<|\"][^\\n\">]+[>|\"] *\n?",
+			regex::ECMAScript | regex::multiline);
 
 		stringstream buff;
 		auto lastItr = src.begin();

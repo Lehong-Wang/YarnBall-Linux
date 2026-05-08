@@ -53,6 +53,7 @@ namespace YarnBall {
 
 		meta.time += h;
 		checkErrors();
+		return 0;
 	}
 
 	void Sim::step(float h) {

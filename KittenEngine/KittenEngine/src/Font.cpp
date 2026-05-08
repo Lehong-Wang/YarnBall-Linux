@@ -31,7 +31,7 @@ namespace Kitten {
 		glTempVar<GL_BLEND_ALPHA> blend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glTempVar<GL_CULL_FACE> cull(false);
 		auto ret = renderInternal(buff, fontSize, color,
-			Kitten::get<Shader>("KittenEngine\\shaders\\text.glsl"), b, horWrap, vertWrap, horJust, vertJust);
+			Kitten::get<Shader>("KittenEngine/shaders/text.glsl"), b, horWrap, vertWrap, horJust, vertJust);
 		return ret;
 	}
 
@@ -47,7 +47,7 @@ namespace Kitten {
 		b.max.x *= aspect;
 		modelMat = glm::ortho(-aspect, aspect, -1.f, 1.f) * modelMat;	// Hacky way to get screenspace
 		auto ret = renderInternal(buff, fontSize, color,
-			Kitten::get<Shader>("KittenEngine\\shaders\\textScreenspace.glsl"), b, horWrap, vertWrap, horJust, vertJust);
+			Kitten::get<Shader>("KittenEngine/shaders/textScreenspace.glsl"), b, horWrap, vertWrap, horJust, vertJust);
 		modelMat = oldM;
 		return ret;
 	}
@@ -185,8 +185,9 @@ namespace Kitten {
 	}
 
 	Font* loadFont(path path) {
-		if (resources.count(path.string())) return (Font*)resources[path.string()];
-		cout << "asset: loading font " << path.string().c_str() << endl;
+		string key = path.generic_string();
+		if (resources.count(key)) return (Font*)resources[key];
+		cout << "asset: loading font " << key.c_str() << endl;
 
 		FT_Face face;
 		int err;
@@ -199,7 +200,7 @@ namespace Kitten {
 
 		Font* font = new Font;
 		font->renderedSize = defaultFontLoadRes;
-		resources[path.string()] = font;
+		resources[key] = font;
 
 		int atlasWidth = 0;
 		int maxHeight = 0;
