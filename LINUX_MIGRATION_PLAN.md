@@ -649,6 +649,34 @@ fixed inline:
   `/usr/local/cuda-12.8/bin/__nvcc_device_query`. Switched to
   `${CUDAToolkit_BIN_DIR}/__nvcc_device_query`.
 
+### 9.5.15 CUDA-GL interop bypass (post-merge enhancement)
+The §7.1 risk (WSLg's GL stack lacks NVIDIA's CUDA-GL interop bridge,
+causing context destruction) is now handled at runtime:
+
+- **`ComputeBuffer.h`**: added `cudaGLInteropBroken()` — checks
+  `glGetString(GL_RENDERER)` once, sets a static flag if the substring
+  matches `"D3D12"` (WSLg Mesa-on-D3D12) or `"llvmpipe"` (Mesa software
+  fallback). Native NVIDIA renderers don't match → fast interop path
+  unchanged.
+- **`ComputeBuffer::cudaWriteGL` / `cudaReadGL`**: when the flag is set,
+  bypass interop with a host roundtrip
+  (`cudaMemcpy DtoH` → `glBufferSubData`, and the symmetric direction
+  for read). A `thread_local std::vector<uint8_t>` caches the staging
+  buffer to avoid per-frame allocation.
+- **`KittenInit.cpp`**: after `gladLoadGLLoader`, prints
+  `GL: <vendor> | <renderer> | <version>` so the GL stack is visible
+  at startup for diagnostics.
+- **No API change**: callers still invoke `vertBuffer->cudaWriteGL(...)`;
+  the dispatch is internal.
+- **Cost on the fallback path**: ~1–2 ms/frame for the YarnBall sim's
+  ~2 MB/frame DtoH+upload at 65k verts. Negligible at 30 FPS.
+- **Cost on the fast path**: zero — one `strstr` at startup, then a
+  cached branch.
+
+Verified: GUI mode on WSLg (llvmpipe) now runs the cable_work_pattern
+twist scenario for 12+ seconds without crashing, zero CUDA errors,
+zero shader errors. Headless mode unchanged.
+
 ### 9.5.13 Pre-existing issues left as-is
 Flagged by reviewers but out of scope for this Linux-migration commit:
 

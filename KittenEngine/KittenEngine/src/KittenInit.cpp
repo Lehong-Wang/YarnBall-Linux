@@ -85,6 +85,8 @@ namespace Kitten {
 			std::exit(1);
 		}
 		assert(glGetError() == GL_NO_ERROR);
+		printf("GL: %s | %s | %s\n",
+			glGetString(GL_VENDOR), glGetString(GL_RENDERER), glGetString(GL_VERSION));
 
 		glEnable(GL_MULTISAMPLE);
 
