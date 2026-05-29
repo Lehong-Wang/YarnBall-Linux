@@ -1,7 +1,9 @@
 ---
 abstract: "Why CMake-alongside-MSBuild instead of replacing it; FetchContent
            for ImGui/CLI11 vs distro packages; auto-generate GLAD vs commit
-           it; runtime CUDA-GL interop bypass via renderer-string detection."
+           it; runtime CUDA-GL interop bypass via renderer-string detection.
+           + (proposed) port the de-collisioned Cosserat solver to NVIDIA
+           Warp for batched Isaac Lab RL."
 ---
 
 # Decisions
@@ -109,3 +111,60 @@ specific decision from a commit, split into `decisions/NNNN-slug.md`.
   every latent API smell".
 - **Supersedes**: an earlier `void` change in the same migration
   (uncommitted, never shipped).
+
+### 2026-05-29 — (Proposed) Port the de-collisioned Cosserat solver to NVIDIA Warp for batched Isaac Lab RL
+- **Status**: proposed
+- **Context**: A downstream effort (not YarnBall maintenance) wants the
+  Cosserat rod solver running inside Isaac Lab for massively-parallel RL —
+  ~1000 rod-per-arm envs, max throughput. Locked scope: no collision,
+  kinematic-pin coupling only (rod follows the gripper, no reaction force),
+  Cosserat fidelity required. Relies on the internals in
+  `NOTES.md ## Architecture quirks` (collision is one BVH path; contact is
+  fused in the solver; rods already batch into one flat array).
+- **Decision**: Port the ~150-line de-collisioned solver to Warp (Python
+  JIT-to-CUDA). Warp is Isaac Lab's native kernel layer (auto-batch, CUDA
+  graph capture, zero-copy torch interop) and has no per-platform native
+  artifact to build.
+- **Rough plan**:
+  0. *Validation harness first* — run reference YarnBall headless on one rod
+     with a scripted pin trajectory; dump per-step pos+quat as ground truth.
+  1. State = flat `N*V` Warp arrays (pos/vel/last_vel/dx/last_pos:vec3,
+     q/q_rest:quat, inv_mass/k_stretch/l_rest:float, flags:uint32).
+  2. Four kernels 1:1 with the solver: `init_itr`, `cosserat_itr` (drop the
+     contact loop; replace the shared-mem sector reduction with a direct
+     neighbor gather over segments [tid-1,tid] and [tid,tid+1] gated by
+     hasPrev/hasNext), `quaternion_itr`, `end_itr`.
+  3. Capture `init + num_itr*(cosserat+quaternion) + end` in a
+     `wp.ScopedCapture` graph (on a Warp stream — default stream can't be
+     captured); `advance(dt)` = `wp.capture_launch` per substep, no host sync.
+  4. Validate against the Phase-0 dump; tune `num_itr`; compare on the SAME
+     GPU to avoid FP-arch drift.
+  5. RL glue kernels: `apply_pins(ee_pose[N,7])` + `reset_envs(env_ids)`
+     (zero vel/last_vel/last_pos on reset). Per-vertex params already enable
+     domain randomization.
+  6. Isaac Lab: subclass `DirectRLEnv`; post-PhysX, `wp.from_torch` the EE
+     pose → apply_pins → capture_launch → `wp.to_torch(pos)` as obs. Cache
+     the torch↔warp views and use the `from_torch(return_ctype=...)` fast
+     path to stay sync-free; headless, no rendering.
+- **Two review findings that simplify the port**:
+  - With collision gone the position Hessian is `s*I` (all remaining terms —
+    inertia, stretch, connection — are isotropic-diagonal; the off-diagonal
+    `hess3::outer` was contact-only). The per-vertex 3x3 solve collapses to a
+    scalar division `dx += accel_ratio * f / s`.
+  - `wp.quat` layout `(i,j,k,w)` with `w` real matches `Kit::Rotor` exactly →
+    orientation DOFs port with no re-derivation.
+- **Why Warp over the alternatives**: native Isaac Lab integration, no
+  device-pointer/stream plumbing, no per-platform binary, future-friendly
+  toward Newton (the Warp-based engine now in Isaac Lab). Cost: re-validate
+  a rewrite (hence Phase 0).
+- **Rejected**: (a) CUDA `.so` binding — reuses validated math but ties you
+  to a Linux `.so`/Windows DLL plus manual stream/pointer plumbing against
+  Isaac; (b) PhysX capsule rope — free + two-way collision but loses the
+  Cosserat twist/bend fidelity that is the reason to use this solver;
+  (c) reuse an existing Warp/Newton rod — none ships (Newton has cloth-VBD +
+  MPM, not rods).
+- **Open**: whether RL later needs self-collision (reintroduces the BVH +
+  per-substep sync, and inter-env coupling unless envs are spaced beyond rod
+  reach) or two-way coupling (extract the pin reaction force). Platform:
+  prototype on WSL2, run real training on native Linux. See user-level
+  memory `isaac-rl-rod-port` for the full scope record.

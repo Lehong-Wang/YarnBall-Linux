@@ -3,7 +3,10 @@ abstract: "Cross-compiler / cross-platform gotchas surfaced during the Linux
            migration: GCC anonymous-aggregate strictness, CMake CMP0104
            auto-init, libstdc++ chrono aliasing, two-phase template lookup,
            WSLg's missing CUDA-GL interop, latent regex bug. + submodule's
-           stripped Common.h that silently shadows."
+           stripped Common.h that silently shadows. + sim-core internals:
+           collision is one BVH path (self == inter-rod), contact is fused
+           into the Cosserat solver, query() syncs per substep, rods batch
+           into one flat array."
 ---
 
 # Notes
@@ -120,7 +123,13 @@ treats the whole RHS as one filename. Normalize before joining:
 - **No headless library variant.** `YarnBall.h` transitively pulls
   GLAD/GLFW/ImGui via `KittenEngine.h`. Even `--headless` mode requires
   the full GUI dep set at compile time. Splitting would be a real
-  refactor; out of scope so far.
+  refactor; out of scope so far. (That said, the *physics* TUs use no GL
+  symbols — only `Kit::Rotor` / `hess3` / `segmentClosestPoints` /
+  `pow2` / `length2` / `Bound` (all header-only) + `Kit::LBVH`. GL enters
+  solely via the `KittenEngine.h` umbrella include and the
+  `ComputeBuffer`/`Mesh` render members of `Sim`. So a headless sim lib
+  is mostly drop-the-render-members + swap the umbrella include, not a
+  deep refactor.)
 - **Sim's GL ComputeBuffers are guarded by `glGetStringi` truthiness**
   (`YarnBall.cu:160, 191`). Headless mode (no GL context) → glad's
   function pointers are null → branches skipped. The sim works without
@@ -134,3 +143,33 @@ treats the whole RHS as one filename. Normalize before joining:
   `configure()`/`advance()` to surface failures. Fragile but pre-existing.
 - **`Sim::step(float h)` ignores its `h` parameter** — it calls
   `advance(maxH)`, not `advance(h)`. Pre-existing bug.
+- **Collision is a single code path; there is no "self-collision only"
+  toggle.** `detectCollisions` builds one global LBVH over *all*
+  segments; `buildCollisionList` (collision.cu) exempts only adjacent
+  (`|i-j| ≤ 2`) and glued segments. Self-collision and inter-rod
+  collision are therefore the same mechanism. Consequence: one rod per
+  `Sim` ⇒ only self-collision by construction; many rods in one `Sim`
+  with collisions on ⇒ they all collide with each other. Turn off via
+  `detectionPeriod ≤ 0` (the contact loop reads `d_numCols`, which stays
+  0, so it's skipped).
+- **Contact response is fused into `cosseratItr`, not a separate phase.**
+  The IPC barrier + friction energy is evaluated *inside* the solver
+  kernel (cosserat.cu:81–146), so it runs `numItr`× per substep; broad/
+  narrow-phase detection runs 1× per detection step. Contacts are
+  detected once but resolved `numItr` times — the solver kernel
+  dominates runtime, and you cannot time "contact response" separately
+  from the solver by kernel.
+- **`bvh.query()` forces a CPU↔GPU sync every detection step.** It
+  returns `std::min((size_t)impl->d_flags[0], resSize)` (lbvh.cu:399/419);
+  reading element `[0]` of a `thrust::device_vector` is a synchronizing
+  copy. `compute()` reads `d_flags[0]` too (line 379) but only on a full
+  rebuild (~every `bvhRebuildPeriod`). So collisions-on ⇒ a sync per
+  substep, on top of the one `checkErrors` sync per `advance()`.
+  Disabling collision removes the per-substep sync.
+- **Independent rods share one flat vertex array.** `createFromCurves`
+  packs every curve into one `Sim`, terminating each by
+  `verts[last].flags = 0` (reader.cpp:35). The `hasNext`/`hasPrev` flag
+  guards in `cosseratItr`/`quaternionLambdaItr` stop force and
+  orientation propagation at each boundary, so N rods simulate correctly
+  in a single kernel sweep with zero cross-talk when collision is off.
+  Batching many rods is a data-layout decision, not a kernel change.
