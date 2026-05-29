@@ -7,7 +7,6 @@ third_party/glad/
 
 # Local agent / tooling state
 .claude/
-.agent/
 .graphifyignore
 graphify-out/
 
@@ -42,6 +41,9 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+# .agent/log/ is project memory, not VS build output — re-include after [Ll]og/
+!.agent/log/
+!.agent/log/**
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

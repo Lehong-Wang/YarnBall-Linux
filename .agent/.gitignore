@@ -1,0 +1,5 @@
+# Runtime contract — do not commit
+log/tasks.jsonl
+# Lazily-created session output
+proposed/
+inbox/
